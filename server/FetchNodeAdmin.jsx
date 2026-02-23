@@ -57,6 +57,7 @@ export async function registerUser(userData) {
     method: 'POST',
     body: JSON.stringify(userData)
   });
+  
 }
 
 export async function verifyEmail(token) {
