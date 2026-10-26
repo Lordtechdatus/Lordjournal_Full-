@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 const isProduction = import.meta.env.PROD || window.location.hostname !== 'localhost';
 const API_BASE = isProduction 
   ? '/api'  // Production: use proxy from vite.config.js
-  : 'http://localhost:3000/api';  // Local: connect directly to backend
+  : 'http://localhost:5000/api';  // Local: connect directly to backend
 const TOKEN_STORAGE_KEY = 'adminAuthToken';
 
 // API helper functions
@@ -37,11 +37,25 @@ export async function adminLogin(credentials) {
     body: JSON.stringify(credentials)
   });
   
-  if (response.token) {
-    localStorage.setItem(TOKEN_STORAGE_KEY, response.token);
-  }
-  
   return response;
+}
+
+export async function googleLogin(idToken) {
+  const response = await fetch(`${API_BASE}/auth/google`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ idToken }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error || 'Google login failed');
+  }
+
+  const data = await response.json();
+
+  return data;
 }
 
 // Registration API functions
@@ -76,12 +90,14 @@ export async function submitPaper(submissionData) {
       method: 'POST',
       body: submissionData
     });
-    
+
+    const data = await response.json().catch(() => ({}));
+
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(data.message || `HTTP ${response.status}: ${response.statusText}`);
     }
-    
-    return response.json();
+
+    return data;
   } else {
     // For regular JSON submissions
     return makeRequest('/registration/submit-paper', {

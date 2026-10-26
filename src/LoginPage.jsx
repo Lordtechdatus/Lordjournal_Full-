@@ -1,18 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { checkEmail, adminLogin } from '../server/FetchNodeAdmin';
+import { checkEmail, adminLogin, googleLogin } from '../server/FetchNodeAdmin';
+import { notyf } from './utils/notyf';
 
 const LOGIN_STYLE_ID = 'login-inline-styles';
 
 const styles = `
 .login-container {
-  max-width: 1000px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   padding: 120px 20px 40px;
   text-align: center;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   min-height: 100vh;
-  background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(240,242,247,0.9) 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #f0f2f7 100%);
 }
 
 .login-brand {
@@ -128,80 +130,29 @@ const styles = `
   transform: translateY(1px);
 }
 
-.google-button {
-  background: white;
-  color: #333;
-  padding: 15px 24px;
-  font-size: 1rem;
-  border: 1.5px solid #e1e5ee;
-  border-radius: 12px;
-  cursor: pointer;
-  width: auto;
-  margin: 0 auto 25px;
-  transition: all 0.3s ease;
+.forgot-password-link-wrap {
+  margin: -8px 0 6px;
+  text-align: right;
+}
+
+.forgot-password-link {
+  color: #4285f4;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.forgot-password-link:hover {
+  color: #0052cc;
+  text-decoration: underline;
+}
+
+.google-btn-wrapper {
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 10px;
-  font-weight: 500;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
-
-.google-button:hover {
-  background: #f8fafc;
-  border-color: #d1d5db;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
-}
-
-.google-button svg {
-  width: 20px;
-  height: 20px;
-}
-
-.signup-button {
-  background: #f3f4f6;
-  color: #333;
-  border: none;
-  padding: 15px 24px;
-  font-size: 1rem;
-  border-radius: 12px;
-  cursor: pointer;
-  width: 100%;
-  transition: all 0.3s ease;
-  font-weight: 500;
-}
-
-.signup-button:hover {
-  background: #e5e7eb;
-  transform: translateY(-2px);
-}
-
-.or-divider {
-  position: relative;
-  margin: 25px 0;
-  text-align: center;
-  font-weight: 500;
-  color: #94a3b8;
-  font-size: 0.9rem;
-}
-
-.or-divider::before,
-.or-divider::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  width: 40%;
-  height: 1px;
-  background-color: #e5e7eb;
-}
-
-.or-divider::before {
-  left: 0;
-}
-
-.or-divider::after {
-  right: 0;
+  margin-bottom: 25px;
+  min-height: 44px;
 }
 
 .form-footer {
@@ -226,15 +177,12 @@ const styles = `
     flex-direction: column;
     gap: 1.5rem;
   }
-  
   .login-container {
     padding: 100px 15px 40px;
   }
-  
   .login-brand {
     font-size: 2.2rem;
   }
-  
   .login-column {
     padding: 25px 20px;
   }
@@ -261,7 +209,6 @@ function LoginPage({ onNavigate }) {
       document.head.appendChild(tag);
     }
 
-    // Add Inter font if not already present
     if (!document.querySelector('link[href*="fonts.googleapis.com/css2?family=Inter"]')) {
       const fontLink = document.createElement('link');
       fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap';
@@ -270,28 +217,50 @@ function LoginPage({ onNavigate }) {
     }
   }, []);
 
-  // Initialize Google Identity Services button
+  // Initialize Google Identity Services
   useEffect(() => {
-    const clientId = '616493208885-8lbbgvdpl58vcfkdudsmnfkqptjkt3p5.apps.googleusercontent.com';
-    if (typeof window === 'undefined') return;
-    const gis = window.google && window.google.accounts && window.google.accounts.id;
-    if (!gis) return;
+    const clientId = '513447738204-t72iq6dqng049ou3ntbcthq0588jfr27.apps.googleusercontent.com';
 
-    try {
-      window.google.accounts.id.initialize({
+    const initGoogle = () => {
+      const gis = window.google?.accounts?.id;
+      if (!gis) return;
+
+      gis.initialize({
         client_id: clientId,
-        callback: (response) => {
-          if (response && response.credential) {
-            localStorage.setItem('googleCredential', response.credential);
-            localStorage.setItem('isLoggedIn', 'true');
-            navigate('/profile');
+        callback: async (response) => {
+          if (response?.credential) {
+            try {
+              const authResponse = await googleLogin(response.credential);
+              const payload = JSON.parse(atob(response.credential.split('.')[1]));
+
+              localStorage.removeItem('adminAuthToken');
+              localStorage.removeItem('adminRole');
+              localStorage.setItem('googleCredential', response.credential);
+              localStorage.setItem('isLoggedIn', 'true');
+              localStorage.setItem(
+                'userEmail',
+                authResponse.user?.email || payload.email || ''
+              );
+              localStorage.setItem(
+                'userName',
+                authResponse.user?.given_names ||
+                  payload.name ||
+                  payload.given_name ||
+                  ''
+              );
+              window.dispatchEvent(new Event('lj-auth-change'));
+              navigate('/profile');
+            } catch (err) {
+              console.error('Google login error:', err);
+              notyf.error(err.message || 'Google login failed. Please try again.');
+            }
           }
         },
         ux_mode: 'popup',
       });
 
       if (googleBtnRef.current) {
-        window.google.accounts.id.renderButton(googleBtnRef.current, {
+        gis.renderButton(googleBtnRef.current, {
           theme: 'outline',
           size: 'large',
           shape: 'pill',
@@ -300,8 +269,23 @@ function LoginPage({ onNavigate }) {
           text: 'continue_with',
         });
       }
-    } catch (e) {
-      // ignore
+    };
+
+    if (window.google?.accounts?.id) {
+      initGoogle();
+    } else {
+      // Remove existing GIS script if any to avoid duplicates
+      const existing = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+      if (existing) {
+        existing.onload = initGoogle;
+      } else {
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        script.onload = initGoogle;
+        document.head.appendChild(script);
+      }
     }
   }, [navigate]);
 
@@ -311,45 +295,41 @@ function LoginPage({ onNavigate }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isEmailValid(email)) {
-      alert('Enter a valid email address');
+      notyf.error('Enter a valid email address');
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     try {
       if (!showPasswordInput) {
-        // First step: Check if email exists
         const response = await checkEmail(email);
-        
         if (response.success) {
           if (response.exists) {
-            // User exists - show password input
             setUserExists(true);
             setShowPasswordInput(true);
           } else {
-            // New user - redirect to registration
             navigate('/register', { state: { email } });
           }
         } else {
-          alert(response.message || 'Something went wrong. Please try again.');
+          notyf.error(response.message || 'Something went wrong. Please try again.');
         }
       } else {
-        // Second step: Login with password
         const loginResponse = await adminLogin({ email, password });
-        
         if (loginResponse.success || loginResponse.token) {
-          // Store user email and name for profile access
+          localStorage.removeItem('adminAuthToken');
+          localStorage.removeItem('adminRole');
+          localStorage.setItem('isLoggedIn', 'true');
           localStorage.setItem('userEmail', email);
           localStorage.setItem('userName', loginResponse.user?.given_names || email.split('@')[0]);
-          // Login successful - redirect to profile
+          window.dispatchEvent(new Event('lj-auth-change'));
           navigate('/profile');
         } else {
-          alert(loginResponse.message || 'Login failed. Please check your password.');
+          notyf.error(loginResponse.message || 'Login failed. Please check your password.');
         }
       }
     } catch (error) {
-      alert('Connection failed. Please try again.');
+      notyf.error('Connection failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -361,58 +341,43 @@ function LoginPage({ onNavigate }) {
     setPassword('');
   };
 
-  const handleGoogleLogin = () => {
-    // Simulate Google login
-    setIsLoading(true);
-    
-    setTimeout(() => {
-      localStorage.setItem('isLoggedIn', 'true');
-      setIsLoading(false);
-      if (onNavigate) {
-        onNavigate('home');
-      }
-    }, 1000);
-  };
-
   return (
     <div className="login-container">
-      <div className="login-brand" style={{animation: 'fadeInDown 0.6s ease-out'}}>
+      <div className="login-brand" style={{ animation: 'fadeInDown 0.6s ease-out' }}>
         Lord Journal <span style={{ fontWeight: 300 }}>Login</span>
       </div>
-      
-      <p className="login-subtitle" style={{animation: 'fadeIn 0.8s ease-out'}}>
+
+      <p className="login-subtitle" style={{ animation: 'fadeIn 0.8s ease-out' }}>
         Access research faster and smarter
       </p>
 
       <div className="login-box">
-        <div 
-          className="login-column"
-          style={{animation: 'fadeInLeft 0.6s ease-out'}}
-        >
+        {/* Left column - Google login */}
+        <div className="login-column" style={{ animation: 'fadeInLeft 0.6s ease-out' }}>
           <h3>Quick Access</h3>
-          <div ref={googleBtnRef} className="google-button" aria-label="Continue with Google"></div>
-          <p className="or-divider">OR</p>
-          <button className="signup-button" disabled={isLoading} onClick={() => navigate('/register')}>
-            Sign up with Email
-          </button>
-          <p className="form-footer">By continuing, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.</p>
+          <div className="google-btn-wrapper">
+            <div ref={googleBtnRef} aria-label="Continue with Google" />
+          </div>
+          <p className="form-footer">
+            By continuing, you agree to our{' '}
+            <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+          </p>
         </div>
 
-        <form 
-          onSubmit={handleSubmit} 
+        {/* Right column - Email/Password login */}
+        <form
+          onSubmit={handleSubmit}
           className="login-column"
-          style={{animation: 'fadeInRight 0.6s ease-out'}}
+          style={{ animation: 'fadeInRight 0.6s ease-out' }}
         >
           <h3>{showPasswordInput ? 'Enter Your Password' : 'Enter Your Email'}</h3>
           <p style={{ color: '#666', marginBottom: '20px', fontSize: '0.9rem' }}>
-            {showPasswordInput 
+            {showPasswordInput
               ? `Welcome back! Please enter your password for ${email}`
-              : 'We\'ll send you a secure link to access your account'
-            }
+              : "We'll check if you have an account"}
           </p>
-          
+
           {!showPasswordInput ? (
-            // Email input
             <div className="input-container">
               <input
                 type="email"
@@ -424,11 +389,10 @@ function LoginPage({ onNavigate }) {
                 required
                 className="login-input"
                 autoComplete="email"
-                style={emailFocused ? {transform: 'translateY(-2px)'} : {}}
+                style={emailFocused ? { transform: 'translateY(-2px)' } : {}}
               />
             </div>
           ) : (
-            // Password input
             <>
               <div className="input-container">
                 <input
@@ -441,11 +405,15 @@ function LoginPage({ onNavigate }) {
                   required
                   className="login-input"
                   autoComplete="current-password"
-                  style={passwordFocused ? {transform: 'translateY(-2px)'} : {}}
+                  style={passwordFocused ? { transform: 'translateY(-2px)' } : {}}
                 />
               </div>
-              
-              <button 
+              <div className="forgot-password-link-wrap">
+                <Link to="/forgot-password" className="forgot-password-link">
+                  Forgot Password?
+                </Link>
+              </div>
+              <button
                 type="button"
                 onClick={handleBackToEmail}
                 style={{
@@ -455,71 +423,39 @@ function LoginPage({ onNavigate }) {
                   cursor: 'pointer',
                   fontSize: '0.9rem',
                   marginBottom: '20px',
-                  textDecoration: 'underline'
+                  textDecoration: 'underline',
                 }}
               >
                 ← Use different email
               </button>
             </>
           )}
-          
-          <button 
-            type="submit" 
-            className="login-button"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Checking...' : (showPasswordInput ? 'Login' : 'Continue')}
+
+          <button type="submit" className="login-button" disabled={isLoading}>
+            {isLoading ? 'Please wait...' : showPasswordInput ? 'Login' : 'Continue'}
           </button>
-          
-          {!showPasswordInput && (
-            <p className="form-footer" style={{ marginTop: '15px' }}>
-              Already have an account? <a href="#" onClick={(e) => { e.preventDefault(); setShowPasswordInput(true); }}>Sign in</a>
-            </p>
-          )}
+
         </form>
       </div>
-      
-      <style>
-        {`
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-          
-          @keyframes fadeInDown {
-            from { 
-              opacity: 0;
-              transform: translateY(-20px);
-            }
-            to { 
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          
-          @keyframes fadeInLeft {
-            from { 
-              opacity: 0;
-              transform: translateX(-20px);
-            }
-            to { 
-              opacity: 1;
-              transform: translateX(0);
-            }
-          }
-          
-          @keyframes fadeInRight {
-            from { 
-              opacity: 0;
-              transform: translateX(20px);
-            }
-            to { 
-              opacity: 1;
-              transform: translateX(0);
-            }
-          }
-        `}
-      </style>
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes fadeInDown {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInLeft {
+          from { opacity: 0; transform: translateX(-20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeInRight {
+          from { opacity: 0; transform: translateX(20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+      `}</style>
     </div>
   );
 }

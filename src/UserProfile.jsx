@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUserProfile, clearAuthToken, updateProfile } from '../server/FetchNodeAdmin';
+import { getUserProfile, updateProfile } from '../server/FetchNodeAdmin';
 import InstitutionField from './components/InstitutionField';
+import { notyf } from './utils/notyf';
 import { useWebSocket } from './contexts/WebSocketContext';
+import { clearAuthStorage, getIsAdmin } from './utils/auth';
 
 const PROFILE_STYLE_ID = 'profile-inline-styles';
 
@@ -13,16 +15,61 @@ const PROFILE_STYLE_ID = 'profile-inline-styles';
 
 
 const styles = `
+/* NAYA background — purana replace karo */
 .profile-container {
-  max-width: 1000px;
+  max-width: 1480px;
   margin: 0 auto;
   padding: 120px 20px 40px;
   text-align: center;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   min-height: 100vh;
-  background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(240,242,247,0.9) 100%);
+
+  /* Paper texture effect using CSS only */
+  background-color: #f7f6f2;
+  background-image:
+    /* Fine grain noise — paper feel */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeBlend in='SourceGraphic' mode='multiply'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E"),
+    /* Subtle horizontal lines — ruled paper */
+    repeating-linear-gradient(
+      transparent,
+      transparent 39px,
+      rgba(0, 52, 130, 0.06) 39px,
+      rgba(0, 52, 130, 0.06) 40px
+    ),
+    /* Warm paper base gradient */
+    linear-gradient(175deg, #f0eee8 0%, #f7f6f2 30%, #f4f6fa 70%, #eef2f8 100%);
+  background-size: 300px 300px, 100% 40px, 100% 100%;
+
+  /* LJ watermark — bottom right */
+  position: relative;
 }
 
+/* Watermark overlay */
+.profile-container::before {
+  content: 'LJ';
+  position: fixed;
+  bottom: 6%;
+  right: 5%;
+  font-size: 18vw;
+  font-weight: 900;
+  color: rgba(0, 82, 204, 0.04);
+  font-family: 'Inter', sans-serif;
+  pointer-events: none;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  z-index: 0;
+  user-select: none;
+}
+
+/* Ensure content stays above watermark */
+.profile-content,
+.profile-header,
+.profile-brand,
+.profile-subtitle {
+  position: relative;
+  z-index: 1;
+}
+  
 .profile-brand {
   font-size: 2.5rem;
   font-weight: 800;
@@ -649,6 +696,11 @@ const styles = `
 }`;
 
 function UserProfile() {
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
   const navigate = useNavigate();
   const { joinUserRoom, onSubmissionStatusUpdate, offSubmissionStatusUpdate, isConnected, usePolling } = useWebSocket();
   const [userProfile, setUserProfile] = useState(null);
@@ -668,14 +720,18 @@ function UserProfile() {
   const [highlightedSubmission, setHighlightedSubmission] = useState(null);
 
   useEffect(() => {
-    // Check if user is logged in
-    const authToken = localStorage.getItem('adminAuthToken');
-    if (!authToken) {
+    if (getIsAdmin()) {
+      navigate('/admin', { replace: true });
+      return;
+    }
+
+    const authToken = localStorage.getItem('googleCredential');
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    if (!authToken && !isLoggedIn) {
       navigate('/login');
       return;
     }
 
-    // Get user profile
     loadUserProfile();
   }, [navigate]);
 
@@ -740,35 +796,28 @@ function UserProfile() {
 
   const loadUserProfile = async () => {
     try {
-      // Get the auth token
-      const authToken = localStorage.getItem('adminAuthToken');
-      if (!authToken) {
+      const authToken = localStorage.getItem('googleCredential');
+      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+      if (!authToken && !isLoggedIn) {
         setError('No authentication token found');
         setIsLoading(false);
         return;
       }
 
-      // Get user email from localStorage
       const userEmail = localStorage.getItem('userEmail');
       if (!userEmail) {
         setError('No user email found');
         setIsLoading(false);
         return;
       }
-      
-  
-      
-      // Call the real API to get user profile
+
+      // Always fetch from database for both Google and normal login
       const response = await getUserProfile(userEmail);
-      
-      
-      
       if (response.success && response.user) {
         setUserProfile(response.user);
       } else {
         setError(response.message || 'Failed to load profile data');
       }
-      
       setIsLoading(false);
     } catch (error) {
       setError('Failed to connect to server. Please try again.');
@@ -777,7 +826,7 @@ function UserProfile() {
   };
 
   const handleLogout = () => {
-    clearAuthToken();
+    clearAuthStorage();
     navigate('/login');
   };
 
@@ -806,22 +855,22 @@ function UserProfile() {
   const handleSaveProfile = async () => {
     // Validate form
     if (!editForm.given_names.trim()) {
-      alert('Given names are required');
+      notyf.error('Full Name are required');
       return;
     }
     if (!editForm.family_name.trim()) {
-      alert('Family name is required');
+      notyf.error('Family name is required');
       return;
     }
     if (!editForm.email.trim()) {
-      alert('Email is required');
+      notyf.error('Email is required');
       return;
     }
     
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(editForm.email)) {
-      alert('Please enter a valid email address');
+      notyf.error('Please enter a valid email address');
       return;
     }
 
@@ -829,19 +878,19 @@ function UserProfile() {
     // Validate password fields if password section is shown and any password is provided
     if (showPasswordSection && (editForm.new_password || editForm.current_password || editForm.confirm_password)) {
       if (!editForm.current_password) {
-        alert('Current password is required to change password');
+        notyf.error('Current password is required to change password');
         return;
       }
       if (!editForm.new_password) {
-        alert('New password is required');
+        notyf.error('New password is required');
         return;
       }
       if (editForm.new_password.length < 12) {
-        alert('New password must be at least 12 characters long');
+        notyf.error('New password must be at least 12 characters long');
         return;
       }
       if (editForm.new_password !== editForm.confirm_password) {
-        alert('New password and confirm password do not match');
+        notyf.error('New password and confirm password do not match');
         return;
       }
     }
@@ -879,16 +928,16 @@ function UserProfile() {
         
         // Show success message
         if (response.data.email_changed) {
-          alert('Profile updated successfully! Please check your new email for verification.');
+          notyf.success('Profile updated successfully! Please check your new email for verification.');
         } else {
-          alert('Profile updated successfully!');
+          notyf.success('Profile updated successfully!');
         }
       } else {
-        alert(response.message || 'Failed to update profile. Please try again.');
+        notyf.error(response.message || 'Failed to update profile. Please try again.');
       }
       
     } catch (error) {
-      alert('Failed to update profile. Please try again.');
+      notyf.error('Failed to update profile. Please try again.');
     }
   };
 
@@ -1211,14 +1260,14 @@ function UserProfile() {
             
             <div className="edit-modal-content">
               <div className="form-group">
-                <label>Given Names *</label>
+                <label>Full Name *</label>
                 <input
                   type="text"
                   name="given_names"
                   value={editForm.given_names}
                   onChange={handleEditFormChange}
                   className="form-input"
-                  placeholder="Enter your given names"
+                  placeholder="Enter your Full Name"
                 />
               </div>
               

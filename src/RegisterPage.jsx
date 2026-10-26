@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { registerUser } from '../server/FetchNodeAdmin';
+import { notyf } from './utils/notyf';
 
 const REGISTER_STYLE_ID = 'register-inline-styles';
 
@@ -320,7 +321,7 @@ function RegisterPage() {
 
   // Add real-time validation feedback
   const getValidationMessage = () => {
-    if (!formData.givenNames.trim()) return 'Please enter your given names';
+    if (!formData.givenNames.trim()) return 'Please enter your Full Name';
     if (!formData.familyName.trim()) return 'Please enter your family name';
     if (!isPasswordValid(formData.password)) return 'Password must be at least 12 characters';
     if (!doPasswordsMatch()) return 'Passwords do not match';
@@ -335,7 +336,7 @@ function RegisterPage() {
     e.preventDefault();
     
     if (!isFormValid()) {
-      alert('Please fill in all required fields and accept the terms.');
+      notyf.error('Please fill in all required fields and accept the terms.');
       return;
     }
 
@@ -353,13 +354,13 @@ function RegisterPage() {
       });
 
       if (response.success) {
-        alert('Registration successful! Please check your email for verification.');
+        notyf.success('Registration successful! Please check your email for verification.');
         navigate('/login');
       } else {
-        alert(response.message || 'Registration failed. Please try again.');
+        notyf.error(response.message || 'Registration failed. Please try again.');
       }
     } catch (error) {
-      alert('Registration failed. Please try again.');
+      notyf.error('Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -392,63 +393,65 @@ function RegisterPage() {
             Enter your personal details
           </p>
 
-          {/* Progress Indicator */}
+              {/* Progress Indicator */}
+      <div style={{ 
+        marginBottom: '25px',
+        padding: '15px',
+        backgroundColor: '#f8fafc',
+        borderRadius: '8px',
+        border: '1px solid #e1e5ee'
+      }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          marginBottom: '8px'
+        }}>
+          <span style={{ fontSize: '0.9rem', fontWeight: '500', color: '#333' }}>
+            Form Completion
+          </span>
+          <span style={{ fontSize: '0.8rem', color: '#666' }}>
+            {formData.givenNames.trim() === '' ? 0 : Math.round(([
+              formData.givenNames.trim(),
+              formData.familyName.trim(),
+              isPasswordValid(formData.password),
+              doPasswordsMatch(),
+              termsAccepted
+            ].filter(Boolean).length / 5) * 100)}%
+          </span>
+        </div>
+        <div style={{ 
+          width: '100%', 
+          height: '6px', 
+          backgroundColor: '#e1e5ee', 
+          borderRadius: '3px',
+          overflow: 'hidden'
+        }}>
           <div style={{ 
-            marginBottom: '25px',
-            padding: '15px',
-            backgroundColor: '#f8fafc',
-            borderRadius: '8px',
-            border: '1px solid #e1e5ee'
-          }}>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              marginBottom: '8px'
-            }}>
-              <span style={{ fontSize: '0.9rem', fontWeight: '500', color: '#333' }}>
-                Form Completion
-              </span>
-              <span style={{ fontSize: '0.8rem', color: '#666' }}>
-                {Math.round(([
-                  formData.givenNames.trim(),
-                  formData.familyName.trim(),
-                  isPasswordValid(formData.password),
-                  doPasswordsMatch(),
-                  termsAccepted
-                ].filter(Boolean).length / 5) * 100)}%
-              </span>
-            </div>
-            <div style={{ 
-              width: '100%', 
-              height: '6px', 
-              backgroundColor: '#e1e5ee', 
-              borderRadius: '3px',
-              overflow: 'hidden'
-            }}>
-              <div style={{ 
-                width: `${(formData.givenNames.trim() ? 1 : 0) + 
-                        (formData.familyName.trim() ? 1 : 0) + 
-                        (isPasswordValid(formData.password) ? 1 : 0) + 
-                        (doPasswordsMatch() ? 1 : 0) + 
-                        (termsAccepted ? 1 : 0)} * 20}%`,
-                height: '100%',
-                backgroundColor: '#10b981',
-                transition: 'width 0.3s ease'
-              }} />
-            </div>
-          </div>
+            width: formData.givenNames.trim() === '' ? '0%' : `${([
+              formData.givenNames.trim(),
+              formData.familyName.trim(),
+              isPasswordValid(formData.password),
+              doPasswordsMatch(),
+              termsAccepted
+            ].filter(Boolean).length / 5) * 100}%`,
+            height: '100%',
+            backgroundColor: '#10b981',
+            transition: 'width 0.3s ease'
+          }} />
+        </div>
+      </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="givenNames">Given names</label>
+              <label htmlFor="givenNames">Full Name</label>
               <input
                 type="text"
                 id="givenNames"
                 value={formData.givenNames}
                 onChange={(e) => handleInputChange('givenNames', e.target.value)}
                 required
-                placeholder="Enter your given names"
+                placeholder="Enter your Full Name"
                 style={{
                   borderColor: formData.givenNames.trim() ? '#10b981' : '#e5e7eb',
                   backgroundColor: formData.givenNames.trim() ? '#f0fdf4' : '#f8fafc'

@@ -1,6 +1,5 @@
 import Header from '../Header';
 import Footer from '../Footer';
-import CookieConsent from '../CookieConsent';
 
 export default function Layout({ children, currentPage, onNavigate }) {
   return (
@@ -8,7 +7,6 @@ export default function Layout({ children, currentPage, onNavigate }) {
       <Header onNavigate={onNavigate} currentPage={currentPage} />
       {children}
       <Footer />
-      <CookieConsent />
     </>
   );
 }

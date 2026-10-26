@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
 import Homepage from "./Homepage";
 import LoginPage from "./LoginPage";
+import ForgotPassword from "./ForgotPassword";
 import RegisterPage from "./RegisterPage";
 import UserProfile from "./UserProfile";
 import PaperSubmissionPage from "./PaperSubmissionPage";
@@ -24,9 +25,16 @@ import BooksPage from "./BooksPage";
 import DatabasesPage from "./DatabasesPage";
 import PlatformsPage from "./PlatformsPage";
 import ConnectionTest from "../server/FetchNodeAdmin";
+import BuiltEnvironmentSustainability from "./BuiltEnvironmentSustainability";
+import MedicalScience from "./MedicalScience";
+
 import AdminDashboard from "./AdminDashboard";
+
 import AdminLogin from "./AdminLogin";
+
 import { WebSocketProvider } from "./contexts/WebSocketContext";
+import ScrollToTop from "./components/ScrollToTop";
+import useSessionTimeout from "./hooks/useSessionTimeout";
 
 
 const APP_STYLE_ID = "app-inline-style";
@@ -55,7 +63,7 @@ const styles = `
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
-
+  useSessionTimeout();  
   useEffect(() => {
     if (!document.getElementById(APP_STYLE_ID)) {
       const tag = document.createElement("style");
@@ -72,6 +80,7 @@ function App() {
 
   return (
     <WebSocketProvider>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={
           <Layout currentPage={currentPage} onNavigate={navigateTo}>
@@ -83,12 +92,22 @@ function App() {
             <LoginPage onNavigate={navigateTo} />
           </Layout>
         } />
+        <Route path="/forgot-password" element={
+          <Layout currentPage={currentPage} onNavigate={navigateTo}>
+            <ForgotPassword />
+          </Layout>
+        } />
         <Route path="/register" element={
           <Layout currentPage={currentPage} onNavigate={navigateTo}>
             <RegisterPage />
           </Layout>
         } />
         <Route path="/profile" element={
+          <Layout currentPage={currentPage} onNavigate={navigateTo}>
+            <UserProfile />
+          </Layout>
+        } />
+        <Route path="/my-account" element={
           <Layout currentPage={currentPage} onNavigate={navigateTo}>
             <UserProfile />
           </Layout>
@@ -148,7 +167,17 @@ function App() {
             <ManagementJournal />
           </Layout>
         } />
-        <Route path="/footer" element={
+        <Route path="/journals/built-environment-sustainability" element={
+          <Layout currentPage={currentPage} onNavigate={navigateTo}>
+            <BuiltEnvironmentSustainability />
+          </Layout>
+        } />
+        <Route path="/journals/medical-science" element={
+          <Layout currentPage={currentPage} onNavigate={navigateTo}>
+            <MedicalScience />
+          </Layout>
+        } />
+          <Route path="/footer" element={
           <Footer />
         } />
         <Route path="/journals" element={

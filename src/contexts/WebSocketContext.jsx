@@ -25,7 +25,7 @@ export const WebSocketProvider = ({ children }) => {
     // If DEV: connect directly to your backend dev server
     const WS_URL = isProd
       ? undefined  // same-origin (will use current domain)
-      : 'http://localhost:3000';  // dev: connect directly to backend
+      : 'http://localhost:5000';  // dev: connect directly to backend
 
     const newSocket = io(WS_URL, {
       // IMPORTANT: this must match your Nginx location block

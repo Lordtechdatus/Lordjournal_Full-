@@ -2,195 +2,401 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 
 const FOOTER_STYLE_ID = "footer-inline-styles";
+
+const footerSections = [
+  {
+    title: "Products",
+    links: [
+      { label: "Journals", to: "/journals" },
+      { label: "Open Access Journals", to: "/open-access-journals" },
+      { label: "Calls for Papers", to: "/calls-for-papers" },
+      { label: "Publishing Services", to: "/publishing-services" },
+      { label: "Admin", to: "/admin" },
+    ],
+  },
+  {
+    title: "Researchers & Authors",
+    links: [
+      { label: "Authors", to: "/authors" },
+      { label: "Author Guidelines", to: "/author-guidelines" },
+      { label: "Publishing Ethics", to: "/publishing-ethics" },
+      { label: "Editorial Policies", to: "/editorial-policies" },
+    ],
+  },
+  {
+    title: "Resources",
+    links: [
+      { label: "How-to Guides", to: "/how-to-guides" },
+      { label: "Research Integrity", to: "/research-integrity" },
+      { label: "Permissions", to: "/permissions" },
+      { label: "Article Withdrawal", to: "/withdrawal-policy" },
+      { label: "Pricing", to: "/pricing" },
+    ],
+  },
+  {
+    title: "Company",
+    links: [
+      { label: "About Us", to: "/about" },
+      { label: "Contact", to: "/contact" },
+      { label: "Careers", to: "/careers" },
+      { label: "Media Centre", to: "/media-centre" },
+      { label: "Policies", to: "/policies" },
+    ],
+  },
+];
+
 const styles = `
 .footer {
-  background: #0a2a38;
-  color: #cfd8dc;
-  padding: 60px 20px;
   width: 100%;
+  background:
+    radial-gradient(circle at top left, rgba(66, 133, 244, 0.16), transparent 32%),
+    linear-gradient(135deg, #06131f 0%, #0a2433 48%, #071821 100%);
+  color: #dbe6ec;
+  padding: 70px 20px 28px;
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+}
+
+.footer * {
+  box-sizing: border-box;
+}
+
+.footer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.055) 1px, transparent 1px);
+  background-size: 34px 34px;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.footer-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 1250px;
+  margin: 0 auto;
+}
+
+.footer-top {
+  display: grid;
+  grid-template-columns: 1.15fr 2.85fr;
+  gap: 56px;
+  align-items: flex-start;
+}
+
+.footer-brand {
+  max-width: 370px;
+  text-align: left;
+}
+
+.footer-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: #ffffff;
+  margin-bottom: 20px;
+}
+
+.footer-logo-mark {
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ffffff, #dceaff);
+  color: #0052cc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1rem;
+  letter-spacing: -0.04em;
+  box-shadow: 0 14px 32px rgba(0, 82, 204, 0.28);
+  flex-shrink: 0;
+}
+
+.footer-logo-text {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.footer-description {
+  color: rgba(255,255,255,0.72);
+  line-height: 1.75;
+  font-size: 0.98rem;
+  margin: 0;
 }
 
 .footer-grid {
-  max-width: 1200px;
-  margin: 0 auto;
-  width: 100%;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 40px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 36px;
+  text-align: left;
+}
+
+.footer-column {
+  text-align: left;
 }
 
 .footer-column h4 {
-  color: #fff;
-  margin-bottom: 20px;
-  font-size: 1.2rem;
+  color: #ffffff;
+  margin: 0 0 18px;
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  padding-bottom: 0;
+  border: none;
 }
 
 .footer-list {
   list-style: none;
   padding: 0;
-  line-height: 1.8;
+  margin: 0;
 }
 
 .footer-list li {
-  margin-bottom: 8px;
-  cursor: pointer;
-  transition: color 0.2s;
+  margin-bottom: 12px;
 }
 
-.footer-list li:hover {
-  color: #fff;
+.footer-list a {
+  color: rgba(255,255,255,0.72);
+  text-decoration: none;
+  font-size: 0.94rem;
+  line-height: 1.45;
+  transition: color 0.2s ease, padding-left 0.2s ease;
+}
+
+.footer-list a:hover {
+  color: #ffffff;
+  padding-left: 5px;
 }
 
 .footer-bottom {
-  margin-top: 40px;
-  border-top: 1px solid rgba(255,255,255,0.1);
-  padding-top: 20px;
-  text-align: center;
-  font-size: 0.9rem;
+  margin-top: 56px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 24px;
 }
 
-.footer-links {
-  margin-top: 10px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  justify-content: center;
-}
-
-.footer-link {
-  color: #cfd8dc;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.footer-link:hover {
-  color: #fff;
-  text-decoration: underline;
+.footer-copy {
+  color: rgba(255,255,255,0.64);
+  font-size: 0.88rem;
 }
 
 .social-icons {
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 15px;
-  margin-top: 20px;
+  gap: 11px;
 }
 
 .social-icon {
-  width: 36px;
-  height: 36px;
-  display: flex;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255,255,255,0.1);
   border-radius: 50%;
-  transition: background 0.3s;
+  background: rgba(255,255,255,0.09);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #ffffff;
   text-decoration: none;
-  color: inherit;
+  font-weight: 800;
+  transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease;
 }
 
 .social-icon:hover {
-  background: rgba(255,255,255,0.2);
+  transform: translateY(-2px);
+  background: rgba(255,255,255,0.18);
+  border-color: rgba(255,255,255,0.28);
 }
 
-@media (max-width: 768px) {
-  .footer-grid { grid-template-columns: repeat(2, 1fr); }
+.footer-bottom-links {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 18px;
+  flex-wrap: wrap;
 }
 
-@media (max-width: 480px) {
-  .footer { padding: 40px 15px; }
-  .footer-grid { grid-template-columns: 1fr; gap: 30px; }
+.footer-bottom-link {
+  color: rgba(255,255,255,0.68);
+  text-decoration: none;
+  font-size: 0.88rem;
+  transition: color 0.2s ease;
+}
+
+.footer-bottom-link:hover {
+  color: #ffffff;
+}
+
+@media (max-width: 1100px) {
+  .footer-top {
+    grid-template-columns: 1fr;
+    gap: 44px;
+  }
+
+  .footer-brand {
+    max-width: 650px;
+  }
+
+  .footer-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 850px) {
+  .footer {
+    padding: 58px 18px 26px;
+  }
+
+  .footer-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px 28px;
+  }
+
+  .footer-bottom {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+    gap: 18px;
+  }
+
+  .social-icons {
+    justify-content: flex-start;
+  }
+
+  .footer-bottom-links {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 540px) {
+  .footer {
+    padding: 48px 16px 24px;
+  }
+
+  .footer-logo-mark {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+  }
+
+  .footer-logo-text {
+    font-size: 1.25rem;
+  }
+
+  .footer-description {
+    font-size: 0.93rem;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .footer-column h4 {
+    margin-bottom: 13px;
+  }
+
+  .footer-list li {
+    margin-bottom: 10px;
+  }
+
+  .footer-bottom-links {
+    gap: 12px 16px;
+  }
 }
 `;
 
 export default function Footer() {
-  // Inject styles once
   useEffect(() => {
-    if (typeof document !== "undefined" && !document.getElementById(FOOTER_STYLE_ID)) {
-      const tag = document.createElement("style");
+    if (typeof document === "undefined") return;
+
+    let tag = document.getElementById(FOOTER_STYLE_ID);
+
+    if (!tag) {
+      tag = document.createElement("style");
       tag.id = FOOTER_STYLE_ID;
       tag.type = "text/css";
-      tag.appendChild(document.createTextNode(styles));
       document.head.appendChild(tag);
     }
+
+    tag.textContent = styles;
   }, []);
 
   return (
     <footer className="footer" role="contentinfo">
-      <div className="footer-grid">
-        {/* Column 1 */}
-        <div className="footer-column">
-          <h4>Products</h4>
-          <ul className="footer-list">
-            <li><Link to="/journals" style={{ color: 'inherit', textDecoration: 'none' }}>Journals</Link></li>
-              <li><Link to="/books" style={{ color: 'inherit', textDecoration: 'none' }}>Books</Link></li>
-              <li><Link to="/platforms" style={{ color: 'inherit', textDecoration: 'none' }}>Platforms</Link></li>
-              <li><Link to="/databases" style={{ color: 'inherit', textDecoration: 'none' }}>Databases</Link></li>
-              <li><Link to="/admin" style={{ color: 'inherit', textDecoration: 'none' }}>Admin</Link></li>
-          </ul>
+      <div className="footer-inner">
+        <div className="footer-top">
+          <div className="footer-brand">
+            <Link to="/" className="footer-logo" aria-label="LordJournals Home">
+              <div className="footer-logo-mark">LJ</div>
+              <div className="footer-logo-text">LordJournals</div>
+            </Link>
+
+            <p className="footer-description">
+              LordJournals supports open access academic publishing, peer-reviewed
+              research dissemination, and scholarly communication across major
+              disciplines.
+            </p>
+          </div>
+
+          <div className="footer-grid">
+            {footerSections.map((section) => (
+              <div className="footer-column" key={section.title}>
+                <h4>{section.title}</h4>
+
+                <ul className="footer-list">
+                  {section.links.map((link) => (
+                    <li key={link.label}>
+                      <Link to={link.to}>{link.label}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Column 2 */}
-        <div className="footer-column">
-          <h4>Researchers &amp; Partners</h4>
-          <ul className="footer-list">
-            <li><Link to="/authors" style={{ color: 'inherit', textDecoration: 'none' }}>Authors</Link></li>
-            <li>Editors</li>
-            <li>Open science</li>
-            <li>Societies</li>
-            <li>Partners &amp; Affiliates</li>
-            <li>Policies</li>
-          </ul>
-        </div>
+        <div className="footer-bottom">
+          <div className="footer-copy">
+            © {new Date().getFullYear()} LordJournals. All rights reserved.
+          </div>
 
-        {/* Column 3 */}
-        <div className="footer-column">
-          <h4>Librarians</h4>
-          <ul className="footer-list">
-            <li>Overview</li>
-            <li>Products</li>
-            <li>Licensing</li>
-            <li>Tools &amp; Services</li>
-            <li>Account Development</li>
-            <li>Blog</li>
-            <li>Sales and account contacts</li>
-          </ul>
-        </div>
+          <div className="social-icons" aria-label="Social links">
+            <a href="#" className="social-icon" aria-label="X">
+              𝕏
+            </a>
+            <a href="#" className="social-icon" aria-label="Facebook">
+              f
+            </a>
+            <a href="#" className="social-icon" aria-label="LinkedIn">
+              in
+            </a>
+          </div>
 
-        {/* Column 4 */}
-        <div className="footer-column">
-          <h4>Our Company</h4>
-          <ul className="footer-list">
-            <li>Overview</li>
-            <li>About us</li>
-            <li>Careers</li>
-            <li>Education</li>
-            <li>Professional</li>
-            <li>Media Centre</li>
-            <li>Locations &amp; Contact</li>
-          </ul>
-        </div>
-      </div>
-
-      <div className="footer-bottom">
-        <div>© {new Date().getFullYear()} Lord Journal. All rights reserved.</div>
-
-        <div className="social-icons" aria-label="Social links">
-          <a href="#" className="social-icon" aria-label="X (Twitter)">
-            <span>𝕏</span>
-          </a>
-          <a href="#" className="social-icon" aria-label="Facebook">
-            <span>ƒ</span>
-          </a>
-          <a href="#" className="social-icon" aria-label="LinkedIn">
-            <span>in</span>
-          </a>
-        </div>
-
-        <div className="footer-links">
-          <a href="/terms" className="footer-link">Terms</a>
-          <a href="/privacy" className="footer-link">Privacy</a>
-          <a href="/cookies" className="footer-link">Cookies</a>
-          <a href="/accessibility" className="footer-link">Accessibility</a>
+          <div className="footer-bottom-links">
+            <Link to="/terms" className="footer-bottom-link">
+              Terms
+            </Link>
+            <Link to="/privacy" className="footer-bottom-link">
+              Privacy
+            </Link>
+            <Link to="/cookies" className="footer-bottom-link">
+              Cookies
+            </Link>
+            <Link to="/accessibility" className="footer-bottom-link">
+              Accessibility
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
